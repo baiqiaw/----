@@ -1,0 +1,14 @@
+{
+  "name": "@document-converter/types",
+  "version": "1.0.0",
+  "description": "共享 TypeScript 类型定义",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}

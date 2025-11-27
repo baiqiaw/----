@@ -1,0 +1,18 @@
+{
+  "name": "@document-converter/utils",
+  "version": "1.0.0",
+  "description": "共享工具函数",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@document-converter/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}
+
