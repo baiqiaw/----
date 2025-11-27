@@ -15,9 +15,11 @@
 
 ### 环境要求
 
-- Node.js 18+
+- Node.js 20 LTS+
 - PostgreSQL 14+
-- Redis 6+
+- Redis 7+
+- Python 3.10+（OCR引擎）
+- Docker 20.10+（可选，推荐）
 
 ### 安装步骤
 
@@ -31,7 +33,11 @@
 2. **安装依赖**
 
    ```bash
-   npm install
+   # 安装pnpm（推荐）
+   npm install -g pnpm
+
+   # 安装项目依赖
+   pnpm install
    ```
 
 3. **配置环境变量**
@@ -44,23 +50,33 @@
 4. **初始化数据库**
 
    ```bash
-   npm run db:migrate
+   cd backend
+   pnpm prisma migrate dev
+   pnpm prisma generate
    ```
 
 5. **启动服务**
 
    ```bash
-   # 开发环境
-   npm run dev
+   # 启动后端（开发环境）
+   cd backend
+   pnpm dev
 
-   # 生产环境
-   npm run build
-   npm start
+   # 启动前端（开发环境）
+   cd web
+   pnpm dev
+
+   # 或使用Docker Compose（推荐）
+   docker-compose up -d
    ```
+
+**详细部署指南**：请参考 [开发环境搭建指南](./doc/06-部署文档/开发环境搭建指南.md)
 
 ## 📚 文档
 
-完整的项目文档位于 `doc/` 目录：
+完整的项目文档位于 `doc/` 目录，**核心设计文档已完成**（24份）：
+
+### 核心文档
 
 - 📋 [需求规格说明书](./doc/01-需求文档/易档转需求规格说明书（SRS）.md)
 - 🏗️ [系统概要设计](./doc/02-设计文档/系统概要设计文档（HLD）.md)
@@ -71,32 +87,62 @@
 - 📝 [开发规范](./doc/02-设计文档/开发规范文档.md)
 - 🧪 [测试计划](./doc/05-测试文档/测试计划文档.md)
 - 🚀 [部署文档](./doc/06-部署文档/部署文档模板.md)
+- 🛠️ [开发环境搭建指南](./doc/06-部署文档/开发环境搭建指南.md)
 
-**查看完整文档目录**：[doc/README.md](./doc/README.md)
+### 详细设计文档（DDD）
+
+- [格式转换核心引擎](./doc/02-设计文档/详细设计文档（DDD）-格式转换核心引擎.md)
+- [文件上传模块](./doc/02-设计文档/详细设计文档（DDD）-文件上传模块.md)
+- [OCR识别模块](./doc/02-设计文档/详细设计文档（DDD）-OCR识别模块.md)
+- [批量处理模块](./doc/02-设计文档/详细设计文档（DDD）-批量处理模块.md)
+- [缓存管理模块](./doc/02-设计文档/详细设计文档（DDD）-缓存管理模块.md)
+- [错误处理机制](./doc/02-设计文档/详细设计文档（DDD）-错误处理机制.md)
+- [用户管理模块](./doc/02-设计文档/详细设计文档（DDD）-用户管理模块.md)
+- [历史记录模块](./doc/02-设计文档/详细设计文档（DDD）-历史记录模块.md)
+- [AI辅助功能模块](./doc/02-设计文档/详细设计文档（DDD）-AI辅助功能模块.md)
+
+### API接口详细设计
+
+- [单文件转换接口](./doc/02-设计文档/API接口详细设计-单文件转换接口.md)
+- [批量转换接口](./doc/02-设计文档/API接口详细设计-批量转换接口.md)
+- [任务状态查询接口](./doc/02-设计文档/API接口详细设计-任务状态查询接口.md)
+- [系统状态监控接口](./doc/02-设计文档/API接口详细设计-系统状态监控接口.md)
+- [API错误码定义](./doc/02-设计文档/API错误码定义文档.md)
+
+**查看完整文档目录和总结**：
+
+- [文档目录索引](./doc/README.md)
+- [项目文档总结](./doc/项目文档总结.md)
 
 ## 🛠️ 技术栈
 
 ### 后端
 
-- **运行时**：Node.js + TypeScript
-- **框架**：Express.js / Fastify
+- **运行时**：Node.js 20 LTS + TypeScript
+- **框架**：Fastify
 - **数据库**：PostgreSQL 14+
-- **缓存**：Redis 6+
+- **ORM**：Prisma
+- **缓存/队列**：Redis 7+ / BullMQ
 - **文件存储**：本地存储 / AWS S3 / 阿里云 OSS
-- **转换引擎**：LibreOffice / Pandoc / PDF.js
+- **转换引擎**：LibreOffice / Poppler / Sharp / Pandoc / pdf2docx
+- **OCR引擎**：PaddleOCR（个人版）/ 百度OCR（企业版）
+- **AI服务**：百度文心
 
 ### 前端
 
-- **框架**：Vue 3 / React
-- **构建工具**：Vite
-- **UI 组件库**：Element Plus / Ant Design
+- **桌面客户端**：Electron 28+ + React 18 + TypeScript
+- **Web前端**：React 18 + TypeScript + Vite 5
+- **UI组件库**：Ant Design / Ant Design Pro
+- **状态管理**：Zustand
+- **路由**：React Router v6
 
 ### 开发工具
 
 - **代码规范**：ESLint + Prettier
 - **类型检查**：TypeScript
-- **测试框架**：Jest / Vitest
-- **API 文档**：Swagger / OpenAPI
+- **测试框架**：Jest / Playwright
+- **API 文档**：Swagger / OpenAPI 3.0
+- **包管理**：pnpm
 
 ## 📦 项目结构
 
@@ -178,10 +224,24 @@ curl -X GET https://api.example.com/api/v1/tasks/<task-id> \
 
 ## 🗺️ 开发路线图
 
-- [x] 核心转换功能设计
-- [x] API 接口设计
+### ✅ 已完成（设计阶段）
+
+- [x] 需求规格说明书（SRS）
+- [x] 系统概要设计（HLD）
+- [x] 技术选型方案
+- [x] 所有模块详细设计（DDD）- 10个核心模块
+- [x] API接口详细设计 - 4个核心接口
 - [x] 数据库设计
 - [x] 认证授权机制设计
+- [x] 开发规范文档
+- [x] 测试计划文档
+- [x] 开发环境搭建指南
+- [x] 部署文档模板
+
+**核心设计文档完成度：100%**（24份文档）
+
+### 🚧 进行中 / 待开始
+
 - [ ] 核心功能开发
 - [ ] 前端界面开发
 - [ ] 测试用例编写
