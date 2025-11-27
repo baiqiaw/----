@@ -1,0 +1,55 @@
+// Prisma Schema
+// 开发环境和个人版使用 SQLite
+// 企业版生产环境使用 PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"  // 开发环境和个人版
+  // provider = "postgresql"  // 企业版生产环境（取消注释并修改 DATABASE_URL）
+  url      = env("DATABASE_URL")
+}
+
+// 用户角色枚举
+enum UserRole {
+  admin
+  enterprise_admin
+  enterprise_user
+  basic_user
+  free_user
+}
+
+// 账户类型枚举
+enum AccountType {
+  free
+  basic
+  enterprise
+}
+
+// 用户状态枚举
+enum UserStatus {
+  active
+  disabled
+  suspended
+}
+
+// 用户表
+model User {
+  id          String      @id @default(uuid())
+  username    String      @unique
+  email       String      @unique
+  passwordHash String     @map("password_hash")
+  salt       String
+  role       UserRole     @default(free_user)
+  accountType AccountType @default(free) @map("account_type")
+  status     UserStatus   @default(active)
+  lastLoginAt DateTime?    @map("last_login_at")
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+  deletedAt  DateTime?    @map("deleted_at")
+
+  @@map("users")
+}
+
