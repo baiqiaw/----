@@ -35,6 +35,46 @@ enum UserStatus {
   suspended
 }
 
+// 存储类型枚举
+enum StorageType {
+  local
+  s3
+  oss
+}
+
+// 文件状态枚举
+enum FileStatus {
+  active
+  deleted
+  expired
+}
+
+// 任务类型枚举
+enum TaskType {
+  single
+  batch
+}
+
+// 任务状态枚举
+enum TaskStatus {
+  pending
+  processing
+  completed
+  failed
+  cancelled
+}
+
+// 批量任务状态枚举
+enum BatchTaskStatus {
+  pending
+  processing
+  completed
+  failed
+  cancelled
+  paused
+  partial
+}
+
 // 用户表
 model User {
   id          String      @id @default(uuid())
@@ -50,6 +90,180 @@ model User {
   updatedAt  DateTime     @updatedAt @map("updated_at")
   deletedAt  DateTime?    @map("deleted_at")
 
+  // 关联关系
+  settings   UserSetting[]
+  apiKeys    ApiKey[]
+  files      File[]
+  tasks      ConversionTask[]
+  batchTasks BatchTask[]
+  history    ConversionHistory[]
+
   @@map("users")
+}
+
+// 用户配置表
+model UserSetting {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  settingKey String   @map("setting_key")
+  settingValue String? @map("setting_value")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, settingKey])
+  @@map("user_settings")
+}
+
+// API密钥表
+model ApiKey {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  keyName     String    @map("key_name")
+  hashedKey   String    @unique @map("hashed_key")
+  permissions String?   // JSON 数组（SQLite 使用 TEXT）
+  expiresAt   DateTime? @map("expires_at")
+  lastUsedAt  DateTime? @map("last_used_at")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}
+
+// 文件格式字典表
+model FileFormat {
+  formatCode    String  @id @map("format_code")
+  formatName    String  @map("format_name")
+  formatCategory String @map("format_category")
+  mimeType      String? @map("mime_type")
+  fileExtension String  @map("file_extension")
+  isSupported   Boolean @default(true) @map("is_supported")
+  isInput       Boolean @default(true) @map("is_input")
+  isOutput      Boolean @default(true) @map("is_output")
+  description   String?
+
+  files File[]
+
+  @@map("file_formats")
+}
+
+// 文件表
+model File {
+  id            String      @id @default(uuid())
+  userId        String?     @map("user_id")
+  fileName      String      @map("file_name")
+  originalName  String      @map("original_name")
+  filePath      String      @map("file_path")
+  fileSize      Int         @map("file_size")
+  mimeType      String?     @map("mime_type")
+  fileFormat    String?     @map("file_format")
+  fileHash      String?     @map("file_hash")
+  storageType   StorageType @default(local) @map("storage_type")
+  storagePath   String?     @map("storage_path")
+  metadata      String?     // JSON（SQLite 使用 TEXT）
+  autoDelete    Boolean     @default(false) @map("auto_delete")
+  deleteAfterHours Int?     @map("delete_after_hours")
+  tags          String?     // JSON 数组（SQLite 使用 TEXT）
+  status        FileStatus  @default(active)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  deletedAt     DateTime?   @map("deleted_at")
+
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  format     FileFormat? @relation(fields: [fileFormat], references: [formatCode], onDelete: SetNull)
+  sourceTasks ConversionTask[] @relation("SourceFile")
+  resultTasks ConversionTask[] @relation("ResultFile")
+
+  @@map("files")
+}
+
+// 转换任务表
+model ConversionTask {
+  id            String     @id @default(uuid())
+  userId        String?    @map("user_id")
+  taskType      TaskType   @map("task_type")
+  batchId       String?    @map("batch_id")
+  sourceFileId  String     @map("source_file_id")
+  targetFormat  String     @map("target_format")
+  sourceFormat  String?    @map("source_format")
+  status        TaskStatus @default(pending)
+  progress      Int        @default(0)
+  options       String?    // JSON（SQLite 使用 TEXT）
+  resultFileId  String?    @map("result_file_id")
+  errorCode     String?    @map("error_code")
+  errorMessage  String?    @map("error_message")
+  conversionTime Int?      @map("conversion_time")
+  qualityMetrics String?   @map("quality_metrics") // JSON（SQLite 使用 TEXT）
+  createdAt     DateTime   @default(now()) @map("created_at")
+  startedAt     DateTime?  @map("started_at")
+  completedAt   DateTime?  @map("completed_at")
+
+  user        User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sourceFile File   @relation("SourceFile", fields: [sourceFileId], references: [id])
+  resultFile File?  @relation("ResultFile", fields: [resultFileId], references: [id])
+  batchTask   BatchTask? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  @@map("conversion_tasks")
+}
+
+// 批量任务表
+model BatchTask {
+  id            String          @id @default(uuid())
+  userId        String?         @map("user_id")
+  taskName      String?          @map("task_name")
+  status        BatchTaskStatus  @default(pending)
+  totalFiles    Int             @default(0) @map("total_files")
+  completedFiles Int            @default(0) @map("completed_files")
+  failedFiles   Int             @default(0) @map("failed_files")
+  progress      Int             @default(0)
+  options       String?         // JSON（SQLite 使用 TEXT）
+  progressDetail String?        @map("progress_detail") // JSON（SQLite 使用 TEXT）
+  mergeResult   Boolean         @default(false) @map("merge_result")
+  resultFileId  String?         @map("result_file_id")
+  errorCode     String?         @map("error_code")
+  errorMessage  String?         @map("error_message")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  startedAt     DateTime?       @map("started_at")
+  completedAt   DateTime?       @map("completed_at")
+
+  user  User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tasks ConversionTask[]
+
+  @@map("batch_tasks")
+}
+
+// 转换历史表
+model ConversionHistory {
+  id            String   @id @default(uuid())
+  userId        String?  @map("user_id")
+  taskId        String?  @map("task_id")
+  sourceFileId  String   @map("source_file_id")
+  resultFileId  String?  @map("result_file_id")
+  sourceFormat  String   @map("source_format")
+  targetFormat  String   @map("target_format")
+  conversionTime Int?    @map("conversion_time")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("conversion_history")
+}
+
+// 系统配置表
+model SystemConfig {
+  id          String  @id @default(uuid())
+  configKey   String  @unique @map("config_key")
+  configValue String  @map("config_value")
+  configType  String  @map("config_type") // string/number/boolean/json
+  description String?
+  isPublic    Boolean @default(false) @map("is_public")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_configs")
 }
 
