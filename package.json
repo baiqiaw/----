@@ -1,0 +1,34 @@
+{
+  "name": "document-converter",
+  "version": "1.0.0",
+  "description": "一款支持多格式、跨平台、高保真的文档转换工具",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "backend",
+    "web",
+    "desktop"
+  ],
+  "scripts": {
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:desktop": "pnpm --filter desktop dev",
+    "build:backend": "pnpm --filter backend build",
+    "build:web": "pnpm --filter web build",
+    "build:desktop": "pnpm --filter desktop build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "type-check": "pnpm -r type-check"
+  },
+  "devDependencies": {
+    "prettier": "^3.0.0",
+    "typescript": "^5.2.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
+}
+
